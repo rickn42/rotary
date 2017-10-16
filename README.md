@@ -18,7 +18,8 @@ type Event interface{
 rot := rotary.NewRotary(100) // event buffer size
 rot.Open(10) // concurrent worker count
 
-ctx := rot.NewRotaryContext()
+ctx := rot.NewRotaryContext() // default context
+
 res := rot.Send(ctx, SomeEvent{})
 
 // result 
@@ -40,10 +41,10 @@ func (*SomeEvent) Handle(ctx rotary.Context) error {
 
 ### waitgroup context 
 wait for all sub-event done.
-```go
-rot := rotary.NewRotary(100)
-rot.Open(10)
 
+`ctx.WaitSubEvent()`
+
+```go
 ctx := rot.NewRotaryContext()
 ctx = rotary.WithWaitGroup(ctx, &sync.WaitGroup{})
 
@@ -51,7 +52,7 @@ ctx = rotary.WithWaitGroup(ctx, &sync.WaitGroup{})
 evt := &nestedEvent{} 
 res := rot.Send(ctx, evt)
 
-// wait for only than event done.
+// wait for only that event done.
 res.Wait()
 
 // wait for not only top-event done,
@@ -60,7 +61,12 @@ ctx.WaitSubEvent()
 ```
 
 ### callback event context 
-add callback event and do it later. 
+add callback event and do it later.
+
+`ctx.AddCallbackEvent(ctx Context, cb Event)`
+ 
+`ctx.CallbackEvents() []CallbackEvent` 
+
 ```go
 rot := NewRotary(100)
 rot.Open(10)
@@ -83,6 +89,8 @@ for _, callbackEvt := range ctx.CallbackEvents() {
 ### report context
 break call without event layer.
 
+`ctx.Report(ctx Context, data interface{}) error`
+
 first, make report context structure.
 ```go
 type reporterContext struct {
@@ -96,7 +104,7 @@ func (r reporterContext) Report(_ Context, data interface{}) error {
 ```
 
 then, wrap ctx with it.
-(default reporterContext do nothing.)
+
 ```go
 rot := NewRotary(100)
 rot.Open(10)
